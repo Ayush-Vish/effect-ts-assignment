@@ -4,16 +4,14 @@
   "description": "",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1", 
+    "test": "echo \"Error: no test specified\" && exit 1",
     "start": "ts-node src/app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@effect-ts/core": "^0.60.5",
-    "@effect-ts/node": "^0.39.0",
-    "@effect-ts/system": "^0.57.5",
+    "effect": "^3.2.5",
     "express": "^4.19.2"
   },
   "devDependencies": {

@@ -1,7 +1,7 @@
 import { Context, Layer, Effect, Runtime } from "effect";
 import express from "express";
 
-class Express extends Context.Tag("Express")<
+export class Express extends Context.Tag("Express")<
   Express,
   ReturnType<typeof express>
 >() {

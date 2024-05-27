@@ -37,6 +37,10 @@ const ServerLive = Layer.scopedDiscard(
   })
 );
 
+
+/**
+ * Create a new user
+ */
 const CreateUserLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const app = yield* Express;
@@ -47,6 +51,10 @@ const CreateUserLive = Layer.scopedDiscard(
     });
   })
 );
+/**
+ * Get a task for a user
+ */
+
 const GetUserTaskRouteLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
     const app = yield* _(Express);
@@ -67,6 +75,10 @@ const GetUserTaskRouteLive = Layer.scopedDiscard(
     });
   })
 );
+
+/**
+ * Get all tasks for a user
+ */
 
 const GetUserTasksRouteLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
@@ -115,6 +127,39 @@ const CreateUserTaskRouteLive = Layer.scopedDiscard(
   })
 );
   
+/**
+ * Update a task for a user
+ */
+const UpdateUserTaskRouteLive = Layer.scopedDiscard(
+  Effect.gen(function* (_) {
+    const app = yield* _(Express);
+    const runFork = yield* _(FiberSet.makeRuntime<TaskRepository>());
+    app.put("/users/:user_id/tasks/:task_id", (req, res) => {
+      const userId = req.params.user_id;
+      const taskId = req.params.task_id as unknown as number;
+      console.log(userId,  typeof taskId);
+      console.log(req.body);
+      const decodeBody = Schema.decodeUnknown(UpdateTaskParams);
+      const program = TaskRepository.pipe(
+        Effect.flatMap((repo) =>
+          decodeBody(req.body).pipe(
+            Effect.matchEffect({
+              onFailure: () => Effect.sync(() => res.status(400).json("Invalid Task")),
+              onSuccess: (task) =>
+                repo.updateTask(userId, Number(taskId), task).pipe(
+                  Effect.matchEffect({
+                    onFailure: () => Effect.sync(() => res.status(404).json(`Task ${taskId} not found for user ${userId}`)),
+                    onSuccess: (task) => Effect.sync(() => res.json({ task }))
+                  })
+                )
+            })
+          )
+        )
+      );
+      runFork(program);
+    });
+  })
+);
 
 
 
@@ -130,7 +175,7 @@ class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
 const CreateTaskParams = TaskSchema.pipe(Schema.omit("task_id", "user_id"));
 type CreateTaskParams = Schema.Schema.Type<typeof CreateTaskParams>;
 
-const UpdateTaskParams = TaskSchema.pipe(Schema.omit("task_id", "user_id"));
+const UpdateTaskParams = Schema.partial(TaskSchema.pipe(Schema.omit("task_id", "user_id")));
 type UpdateTaskParams = Schema.Schema.Type<typeof UpdateTaskParams>;
 
 const makeTaskRepository = Effect.gen(function* (_) {
@@ -187,6 +232,25 @@ const makeTaskRepository = Effect.gen(function* (_) {
     ).pipe(Effect.map(() => taskId.toString()));
   };
 
+  const updateTask = (
+    userId: string,
+    taskId: number,
+    params: UpdateTaskParams
+  ): Effect.Effect<TaskSchema, Cause.NoSuchElementException> =>
+    Ref.get(tasksRef).pipe(
+      Effect.flatMap((map) => {
+        console.log(typeof taskId)
+        const dummyTask  = HashMap.get(map, taskId);
+        console.log(dummyTask)
+        if(Option.isNone(dummyTask)){
+          return Effect.fail(new Cause.NoSuchElementException())
+        }
+        console.log(dummyTask.value)
+        const newTask = new TaskSchema({ ...(dummyTask.value), ...params });
+        const updated = HashMap.set(map, Number(taskId), newTask);
+        return Ref.set(tasksRef, updated).pipe(Effect.as(newTask));
+      })
+    );
 
 
 
@@ -195,7 +259,7 @@ const makeTaskRepository = Effect.gen(function* (_) {
     getTask,
     getTasks,
     createTask,
-
+    updateTask,
     getTasksByUser,
     getTaskByUser,
   } as const;
@@ -208,10 +272,7 @@ class TaskRepository extends Context.Tag("TaskRepository")<
   static readonly Live = Layer.effect(TaskRepository, makeTaskRepository);
 }
 
-class Express extends Context.Tag("Express")<
-  Express,
-  ReturnType<typeof express>
->() {
+class Express extends Context.Tag("Express")<Express,ReturnType<typeof express>>() {
   static readonly Live = Layer.sync(Express, () => {
     const app = express();
     app.use(bodyParser.json());
@@ -224,7 +285,7 @@ const MainLive = ServerLive.pipe(
   Layer.merge(GetUserTaskRouteLive),
   Layer.merge(GetUserTasksRouteLive),
   Layer.merge(CreateUserTaskRouteLive),
-
+  Layer.merge(UpdateUserTaskRouteLive),
 
   Layer.merge(CreateUserLive),
   Layer.provide(Express.Live),

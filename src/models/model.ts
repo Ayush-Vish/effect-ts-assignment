@@ -40,7 +40,6 @@ export const makeTaskRepository = Effect.gen(function* (_) {
         })
       )
     );
-
   const updateTask = (
     id: number,
     params: UpdateTaskParams,

@@ -55,7 +55,6 @@ export const makeTaskRepository = Effect.gen(function* (_) {
         return Ref.set(tasksRef, updated).pipe(Effect.as(newTask));
       })
     );
-
   const deleteTask = (id: number): Effect.Effect<boolean> =>
     Ref.get(tasksRef).pipe(
       Effect.flatMap((map) =>

@@ -37,7 +37,6 @@ const ServerLive = Layer.scopedDiscard(
   })
 );
 
-
 /**
  * Create a new user
  */
@@ -63,11 +62,16 @@ const GetUserTaskRouteLive = Layer.scopedDiscard(
       const userId = req.params.user_id;
       const taskId = req.params.task_id;
       const program = TaskRepository.pipe(
-        Effect.flatMap((repo) => repo.getTaskByUser(userId, taskId)),
+        Effect.flatMap((repo) => repo.getTaskByUser(userId, Number(taskId))),
         Effect.flatMap(
           Option.match({
-            onNone: () => Effect.sync(() => res.status(404).json(`Task ${taskId} not found for user ${userId}`)),
-            onSome: (task) => Effect.sync(() => res.json(task))
+            onNone: () =>
+              Effect.sync(() =>
+                res
+                  .status(404)
+                  .json(`Task ${taskId} not found for user ${userId}`)
+              ),
+            onSome: (task) => Effect.sync(() => res.json(task)),
           })
         )
       );
@@ -126,7 +130,7 @@ const CreateUserTaskRouteLive = Layer.scopedDiscard(
     });
   })
 );
-  
+
 /**
  * Update a task for a user
  */
@@ -137,21 +141,27 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
     app.put("/users/:user_id/tasks/:task_id", (req, res) => {
       const userId = req.params.user_id;
       const taskId = req.params.task_id as unknown as number;
-      console.log(userId,  typeof taskId);
+      console.log(userId, typeof taskId);
       console.log(req.body);
       const decodeBody = Schema.decodeUnknown(UpdateTaskParams);
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) =>
           decodeBody(req.body).pipe(
             Effect.matchEffect({
-              onFailure: () => Effect.sync(() => res.status(400).json("Invalid Task")),
+              onFailure: () =>
+                Effect.sync(() => res.status(400).json("Invalid Task")),
               onSuccess: (task) =>
                 repo.updateTask(userId, Number(taskId), task).pipe(
                   Effect.matchEffect({
-                    onFailure: () => Effect.sync(() => res.status(404).json(`Task ${taskId} not found for user ${userId}`)),
-                    onSuccess: (task) => Effect.sync(() => res.json({ task }))
+                    onFailure: () =>
+                      Effect.sync(() =>
+                        res
+                          .status(404)
+                          .json(`Task ${taskId} not found for user ${userId}`)
+                      ),
+                    onSuccess: (task) => Effect.sync(() => res.json({ task })),
                   })
-                )
+                ),
             })
           )
         )
@@ -161,8 +171,25 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
   })
 );
 
+/**
+ * Delete a task for a user
+ */
 
-
+const DeleteUserTaskRouteLive = Layer.scopedDiscard(
+  Effect.gen(function* (_) {
+    const app = yield* _(Express);
+    const runFork = yield* _(FiberSet.makeRuntime<TaskRepository>());
+    app.delete("/users/:user_id/tasks/:task_id", (req, res) => {
+      const userId = req.params.user_id;
+      const taskId = req.params.task_id as unknown as number;
+      const program = TaskRepository.pipe(
+        Effect.flatMap((repo) => repo.deleteTask(userId, Number(taskId))),
+        Effect.flatMap((deleted) => Effect.sync(() => res.json({ deleted })))
+      );
+      runFork(program);
+    });
+  })
+);
 
 class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
   task_id: Schema.Number,
@@ -175,7 +202,9 @@ class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
 const CreateTaskParams = TaskSchema.pipe(Schema.omit("task_id", "user_id"));
 type CreateTaskParams = Schema.Schema.Type<typeof CreateTaskParams>;
 
-const UpdateTaskParams = Schema.partial(TaskSchema.pipe(Schema.omit("task_id", "user_id")));
+const UpdateTaskParams = Schema.partial(
+  TaskSchema.pipe(Schema.omit("task_id", "user_id"))
+);
 type UpdateTaskParams = Schema.Schema.Type<typeof UpdateTaskParams>;
 
 const makeTaskRepository = Effect.gen(function* (_) {
@@ -200,7 +229,7 @@ const makeTaskRepository = Effect.gen(function* (_) {
     );
   const getTaskByUser = (
     userId: string,
-    taskId: string
+    taskId: number
   ): Effect.Effect<Option.Option<TaskSchema>> =>
     Ref.get(tasksRef).pipe(
       Effect.map((map) => {
@@ -212,7 +241,6 @@ const makeTaskRepository = Effect.gen(function* (_) {
         return task.value.user_id === userId ? task : Option.none();
       })
     );
-
 
   const createTask = (
     userId: string,
@@ -239,22 +267,44 @@ const makeTaskRepository = Effect.gen(function* (_) {
   ): Effect.Effect<TaskSchema, Cause.NoSuchElementException> =>
     Ref.get(tasksRef).pipe(
       Effect.flatMap((map) => {
-        console.log(typeof taskId)
-        const dummyTask  = HashMap.get(map, taskId);
-        console.log(dummyTask)
-        if(Option.isNone(dummyTask)){
-          return Effect.fail(new Cause.NoSuchElementException())
+        console.log(typeof taskId);
+        const dummyTask = HashMap.get(map, taskId);
+        console.log(dummyTask);
+        if (Option.isNone(dummyTask)) {
+          return Effect.fail(new Cause.NoSuchElementException());
         }
-        console.log(dummyTask.value)
-        const newTask = new TaskSchema({ ...(dummyTask.value), ...params });
+        console.log(dummyTask.value);
+        const newTask = new TaskSchema({ ...dummyTask.value, ...params });
         const updated = HashMap.set(map, Number(taskId), newTask);
         return Ref.set(tasksRef, updated).pipe(Effect.as(newTask));
       })
     );
 
+  const deleteTask = (userId: string, taskId: number): Effect.Effect<string,string> =>
+    Ref.get(tasksRef).pipe(
+      Effect.flatMap((map) => {
+        console.log(taskId, userId);
+         console.log(map);
+        console.log("sjbsjfd");
+        const task = HashMap.get(map, taskId);
+        console.log(HashMap.has(map, taskId));
+        if (Option.isNone(task)) {
+          return Effect.fail("Task not found2");
+        }
 
-
-
+        if (task.value.user_id !== userId) {
+          return Effect.fail("User Id is Incorrect");
+        }
+        return Ref.updateAndGet(tasksRef, (map) =>
+          HashMap.remove(map, taskId)
+        ).pipe(
+          Effect.map(() => {
+            return `Task ${taskId} deleted`;
+          })
+        );
+      }
+      )
+    );
   return {
     getTask,
     getTasks,
@@ -262,6 +312,7 @@ const makeTaskRepository = Effect.gen(function* (_) {
     updateTask,
     getTasksByUser,
     getTaskByUser,
+    deleteTask,
   } as const;
 });
 
@@ -272,7 +323,10 @@ class TaskRepository extends Context.Tag("TaskRepository")<
   static readonly Live = Layer.effect(TaskRepository, makeTaskRepository);
 }
 
-class Express extends Context.Tag("Express")<Express,ReturnType<typeof express>>() {
+class Express extends Context.Tag("Express")<
+  Express,
+  ReturnType<typeof express>
+>() {
   static readonly Live = Layer.sync(Express, () => {
     const app = express();
     app.use(bodyParser.json());
@@ -280,13 +334,12 @@ class Express extends Context.Tag("Express")<Express,ReturnType<typeof express>>
   });
 }
 
-
 const MainLive = ServerLive.pipe(
   Layer.merge(GetUserTaskRouteLive),
   Layer.merge(GetUserTasksRouteLive),
   Layer.merge(CreateUserTaskRouteLive),
   Layer.merge(UpdateUserTaskRouteLive),
-
+  Layer.merge(DeleteUserTaskRouteLive),
   Layer.merge(CreateUserLive),
   Layer.provide(Express.Live),
   Layer.provide(TaskRepository.Live)

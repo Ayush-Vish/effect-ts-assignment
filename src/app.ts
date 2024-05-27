@@ -89,7 +89,10 @@ const GetUserTaskRouteLive = Layer.scopedDiscard(
     const runFork = yield* _(FiberSet.makeRuntime<TaskRepository>());
     app.get("/users/:user_id/tasks/:task_id", (req, res) => {
       const userId = req.params.user_id;
-      const taskId = req.params.task_id;
+      const taskId = Number(req.params.task_id);
+      if (isNaN(taskId)) {
+        return new ApiResponse(res, 400, "Invalid Task ID");
+      }
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) => repo.getTaskByUser(userId, Number(taskId))),
         Effect.flatMap(
@@ -166,7 +169,10 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
     const runFork = yield* _(FiberSet.makeRuntime<TaskRepository>());
     app.put("/users/:user_id/tasks/:task_id", (req, res) => {
       const userId = req.params.user_id;
-      const taskId = req.params.task_id as unknown as number;
+      const taskId = Number(req.params.task_id);
+      if (isNaN(taskId)) {
+        return new ApiResponse(res, 400, "Invalid Task ID");
+      }
       console.log(userId, typeof taskId);
       console.log(req.body);
       const decodeBody = Schema.decodeUnknown(UpdateTaskParams);
@@ -179,9 +185,9 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
               onSuccess: (task) =>
                 repo.updateTask(userId, Number(taskId), task).pipe(
                   Effect.matchEffect({
-                    onFailure: () =>
+                    onFailure: (error) =>
                       Effect.sync(() =>
-                        new ApiResponse(res, 404, `Task ${taskId} not found for user ${userId}`)
+                        new ApiResponse(res, error.statusCode, error.message)
                       ),
                     onSuccess: (task) =>
                       Effect.sync(() =>
@@ -208,7 +214,10 @@ const DeleteUserTaskRouteLive = Layer.scopedDiscard(
     const runFork = yield* _(FiberSet.makeRuntime<TaskRepository>());
     app.delete("/users/:user_id/tasks/:task_id", (req, res) => {
       const userId = req.params.user_id;
-      const taskId = req.params.task_id as unknown as number;
+      const taskId = Number(req.params.task_id);
+      if (isNaN(taskId)) {
+        return new ApiResponse(res, 400, "Invalid Task ID");
+      }
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) => repo.deleteTask(userId, Number(taskId))),
         Effect.matchEffect({

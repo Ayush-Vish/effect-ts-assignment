@@ -98,3 +98,5 @@ curl -X DELETE http://localhost:3000/users/<user_id>/tasks/<task_id>
 > Initailze `Jest` ``` npx ts-jest config:init ```
 
 > Run the Server locally and  Simply run `npm run test`. 
+
+<img src="./image.png" >

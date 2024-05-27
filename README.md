@@ -100,7 +100,7 @@ curl -X DELETE http://localhost:3000/users/<user_id>/tasks/<task_id>
 ```
 
 ## How to run test 
-> Initailze `Jest` ``` npx ts-jest config:init ```
+> Initailze `Jest` using  ``` npx ts-jest config:init ```
 
 > Run the Server locally and  Simply run `npm run test`. 
 

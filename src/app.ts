@@ -12,7 +12,7 @@ import {
   Ref,
   Runtime,
 } from "effect";
-import express from "express";
+import express ,  {Response}  from "express";
 
 import { v4 as uuidv4 } from "uuid";
 
@@ -25,7 +25,11 @@ class HTTPError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 }
-
+class ApiResponse  {
+  constructor(res: Response,statusCode : number,    message?: string , data?:any) {
+    res.status(statusCode).json({ message, data });
+  }
+}
 
 class Express extends Context.Tag("Express")<
   Express,
@@ -69,9 +73,7 @@ const CreateUserLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const app = yield* Express;
     app.post("/users", (_, res) => {
-      return res
-        .status(200)
-        .json({ message: "User Created", user_id: uuidv4() });
+      return new ApiResponse(res, 200 , "User Created" , {user_id : uuidv4()})
     });
   })
 );
@@ -91,12 +93,9 @@ const GetUserTaskRouteLive = Layer.scopedDiscard(
         Effect.flatMap(
           Option.match({
             onNone: () =>
-              Effect.sync(() =>
-                res
-                  .status(404)
-                  .json(`Task ${taskId} not found for user ${userId}`)
+              Effect.sync(() => new ApiResponse(res, 404, `Task ${taskId} not found for user ${userId}`)
               ),
-            onSome: (task) => Effect.sync(() => res.json(task)),
+            onSome: (task) => Effect.sync(() => new ApiResponse(res, 200, "Task Found", task)),
           })
         )
       );
@@ -117,7 +116,7 @@ const GetUserTasksRouteLive = Layer.scopedDiscard(
       const userId = req.params.user_id;
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) => repo.getTasksByUser(userId)),
-        Effect.flatMap((tasks) => Effect.sync(() => res.json(tasks)))
+        Effect.flatMap((tasks) => Effect.sync(() => new ApiResponse(res, 200, "Tasks Retrieved", tasks)))
       );
       runFork(program);
     });
@@ -138,13 +137,13 @@ const CreateUserTaskRouteLive = Layer.scopedDiscard(
           decodeBody(req.body).pipe(
             Effect.matchEffect({
               onFailure: () =>
-                Effect.sync(() => res.status(400).json("Invalid Task")),
+                Effect.sync(() => new ApiResponse(res, 400, "Invalid Task")),
               onSuccess: (task) =>
                 repo
                   .createTask(userId, task)
                   .pipe(
                     Effect.flatMap((id) =>
-                      Effect.sync(() => res.json({ task_id: id }))
+                      Effect.sync(() => new ApiResponse(res , 200 , "Task Created", {task_id :id })  )
                     )
                   ),
             })
@@ -174,22 +173,17 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
           decodeBody(req.body).pipe(
             Effect.matchEffect({
               onFailure: () =>
-                Effect.sync(() => res.status(400).json("Invalid Task")),
+                Effect.sync(() => new ApiResponse(res, 400, "Invalid Task")),
               onSuccess: (task) =>
                 repo.updateTask(userId, Number(taskId), task).pipe(
                   Effect.matchEffect({
                     onFailure: () =>
                       Effect.sync(() =>
-                        res
-                          .status(404)
-                          .json(`Task ${taskId} not found for user ${userId}`)
+                        new ApiResponse(res, 404, `Task ${taskId} not found for user ${userId}`)
                       ),
                     onSuccess: (task) =>
                       Effect.sync(() =>
-                        res.status(200).json({
-                          message: "Task Updated",
-                          task: task,
-                        })
+                        new ApiResponse(res, 200, "Task Updated", task)
                       ),
                   })
                 ),
@@ -217,8 +211,9 @@ const DeleteUserTaskRouteLive = Layer.scopedDiscard(
         Effect.flatMap((repo) => repo.deleteTask(userId, Number(taskId))),
         Effect.matchEffect({
           onFailure: (error) =>
-            Effect.sync(() => res.status(400).json({ error })),
-          onSuccess: (message) => Effect.sync(() => res.json({ message })),
+            Effect.sync(() => new ApiResponse(res, 400, error.message)),
+          onSuccess: (message) => Effect.sync(() => new ApiResponse(res, 200, message)),
+        
         })
       );
       runFork(program);

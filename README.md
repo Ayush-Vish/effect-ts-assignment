@@ -24,6 +24,7 @@
 2. I have implemented `six` layers in this application with `two service` dependancy which are `Express.Live` and `TaskRepository.Live` that are chained using piping functionality of Effect.ts and I have used `pipe` operator here. 
 3. I have used `Ref` for the state Management for the `TaskRepository`.
 4. For Each API EndPoints or Route I am creating a new Layer which retrieves the Express app Instance and making a `runtime` configured Sepcially for the `TaskRepository` Service which run the Effects in parallel using fibres.
+5. Most of the functions are clubbed by piping mechanism.
    
 
 # Installation 

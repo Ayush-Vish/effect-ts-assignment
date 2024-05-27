@@ -1,7 +1,6 @@
 import * as Schema from "@effect/schema/Schema";
 import bodyParser from "body-parser";
 import {
-
   Context,
   Effect,
   FiberSet,
@@ -12,8 +11,8 @@ import {
   Ref,
   Runtime,
 } from "effect";
-import express ,  {Response}  from "express";
 
+import express ,  {Response}  from "express";
 import { v4 as uuidv4 } from "uuid";
 
 class HTTPError extends Error {
@@ -25,6 +24,7 @@ class HTTPError extends Error {
     Error.captureStackTrace(this, this.constructor);
   }
 }
+
 class ApiResponse  {
   constructor(res: Response,statusCode : number,    message?: string , data?:any) {
     res.status(statusCode).json({ message, data });
@@ -41,6 +41,8 @@ class Express extends Context.Tag("Express")<
     return app;
   });
 }
+
+
 const ServerLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
     const port = 3000;

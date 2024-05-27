@@ -10,13 +10,7 @@ export class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
   description: Schema.String,
 }) {}
 
-export interface ITaskRepo {
-  getTask: (id: number) => Effect.Effect<Option.Option<TaskSchema>>;
-  getTasks: Effect.Effect<ReadonlyArray<TaskSchema>>;
-  createTask: (params: CreateTaskParams , user_id : number) => Effect.Effect<number>;
-  updateTask: (id: number, params: UpdateTaskParams) => Effect.Effect<TaskSchema, Cause.NoSuchElementException>;
-  deleteTask: (id: number) => Effect.Effect<boolean>;
-}
+
 
 export const CreateTaskParams =  TaskSchema.pipe(Schema.omit("task_id"));
  type CreateTaskParams = Schema.Schema.Type< typeof CreateTaskParams> ;

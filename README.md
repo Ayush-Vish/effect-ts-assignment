@@ -25,6 +25,12 @@
 5. Most of the functions are clubbed by piping mechanism.
    
 
+
+
+#Requirements
+- Node version 21
+
+
 # Installation 
 
 1. Clone the Repository

@@ -48,7 +48,7 @@ const ServerLive = Layer.scopedDiscard(
 const CreateUserLive = Layer.scopedDiscard(
   Effect.gen(function* () {
     const app = yield* Express;
-    app.get("/users", (req, res) => {
+    app.post("/users", (req, res) => {
       return res
         .status(200)
         .json({ message: "User Created", user_id: uuidv4() });
@@ -166,7 +166,7 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
                       ),
                     onSuccess: (task) => Effect.sync(() => res.status(200).json({ 
                       message:  "Task Updated",
-                      updateTask : task })),
+                      task : task })),
                   })
                 ),
             })
@@ -190,7 +190,7 @@ const DeleteUserTaskRouteLive = Layer.scopedDiscard(
       const userId = req.params.user_id;
       const taskId = req.params.task_id as unknown as number;
       const program = TaskRepository.pipe(
-        Effect.flatMap((repo) => repo.deleteTask(userId, taskId)),
+        Effect.flatMap((repo) => repo.deleteTask(userId, Number(taskId))),
         Effect.matchEffect({
           onFailure: (error) => Effect.sync(() => res.status(400).json({ error })),
           onSuccess: (message) => Effect.sync(() => res.json({ message })),

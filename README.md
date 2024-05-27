@@ -54,9 +54,12 @@
 
 ## API EndPoints 
 
+1. Create a new user:
 ```
 curl -X POST -H "Content-Type: application/json" http://localhost:3000/users
 ```
+
+2. Create a new task for a specified user:
 
 ```
 curl -X POST -H "Content-Type: application/json" -d '{
@@ -66,15 +69,17 @@ curl -X POST -H "Content-Type: application/json" -d '{
 }' http://localhost:3000/users/<user_id>/tasks
 ``` 
 
+3. Retrieve all tasks for a specified user:
 
 ```
 curl -X GET http://localhost:3000/users/<user_id>/tasks 
 ``` 
+4. Retrieve a specific task for a specified user:
 
 ```
 curl -X GET http://localhost:3000/users/<user_id>/tasks/<task_id>
 ```
-
+5. Update a specific task for a specified user:
 
 ```
 curl -X PUT -H "Content-Type: application/json" -d '{
@@ -83,6 +88,7 @@ curl -X PUT -H "Content-Type: application/json" -d '{
     "description":"Hello"
 }' http://localhost:3000/users/<user_id>/tasks/<task_id>
 ```
+6. Delete a specific task for a specified user:
 
 ```
 curl -X DELETE http://localhost:3000/users/<user_id>/tasks/<task_id> 
@@ -90,4 +96,4 @@ curl -X DELETE http://localhost:3000/users/<user_id>/tasks/<task_id>
 
 ## How to run test 
 
-> Simply run `npm run test`. 
+> Run the Server locally and  Simply run `npm run test`. 

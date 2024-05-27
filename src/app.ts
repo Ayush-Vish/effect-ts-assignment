@@ -16,11 +16,22 @@ import express from "express";
 
 import { v4 as uuidv4 } from "uuid";
 
+
+class Express extends Context.Tag("Express")<
+  Express,
+  ReturnType<typeof express>
+>() {
+  static readonly Live = Layer.sync(Express, () => {
+    const app = express();
+    app.use(bodyParser.json());
+    return app;
+  });
+}
 const ServerLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
     const port = 3000;
     const app = yield* _(Express);
-    const runtime = yield* _(Effect.runtime<never>());
+    const runtime = yield* _(Effect.runtime());
     const runFork = Runtime.runFork(runtime);
     yield* _(
       Effect.acquireRelease(
@@ -328,7 +339,6 @@ const makeTaskRepository = Effect.gen(function* (_) {
     deleteTask,
   } as const;
 });
-
 class TaskRepository extends Context.Tag("TaskRepository")<
   TaskRepository,
   Effect.Effect.Success<typeof makeTaskRepository>
@@ -336,16 +346,6 @@ class TaskRepository extends Context.Tag("TaskRepository")<
   static readonly Live = Layer.effect(TaskRepository, makeTaskRepository);
 }
 
-class Express extends Context.Tag("Express")<
-  Express,
-  ReturnType<typeof express>
->() {
-  static readonly Live = Layer.sync(Express, () => {
-    const app = express();
-    app.use(bodyParser.json());
-    return app;
-  });
-}
 
 const MainLive = ServerLive.pipe(
   Layer.merge(GetUserTaskRouteLive),

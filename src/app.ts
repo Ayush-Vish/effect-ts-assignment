@@ -58,8 +58,8 @@ const ServerLive = Layer.scopedDiscard(
  */
 const CreateUserLive = Layer.scopedDiscard(
   Effect.gen(function* () {
-    const app = yield* Express;
-    app.post("/users", (req, res) => {
+    const app = yield* (Express);
+    app.post("/users", (_, res) => {
       return res
         .status(200)
         .json({ message: "User Created", user_id: uuidv4() });

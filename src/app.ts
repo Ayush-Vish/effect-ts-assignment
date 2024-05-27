@@ -121,12 +121,22 @@ const GetUserTasksRouteLive = Layer.scopedDiscard(
       const userId = req.params.user_id;
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) => repo.getTasksByUser(userId)),
-        Effect.flatMap((tasks) => Effect.sync(() => new ApiResponse(res, 200, "Tasks Retrieved", tasks)))
+        Effect.matchEffect({
+          onFailure: (error) =>
+            Effect.sync(() =>
+              new ApiResponse(res, error.statusCode || 500, error.message)
+            ),
+          onSuccess: (tasks) =>
+            Effect.sync(() =>
+              new ApiResponse(res, 200, "Tasks Retrieved", tasks)
+            ),
+        })
       );
       runFork(program);
     });
   })
 );
+
 /**
  * Create a new task for a user
  */

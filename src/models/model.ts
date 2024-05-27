@@ -2,17 +2,26 @@ import * as Schema from "@effect/schema/Schema";
 import { Cause, Effect, HashMap, Option, Ref } from "effect";
 
 
-class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
+export class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
   task_id: Schema.Number,
   user_id: Schema.Number, 
   name: Schema.String,
   status: Schema.String,
   description: Schema.String,
 }) {}
-const CreateTaskParams =  TaskSchema.pipe(Schema.omit("task_id"));
-type CreateTaskParams = Schema.Schema.Type< typeof CreateTaskParams> & { user_id: number };
 
-const UpdateTaskParams = Schema.partial(  TaskSchema, { exact: true }).pipe(Schema.omit("task_id"));
+export interface ITaskRepo {
+  getTask: (id: number) => Effect.Effect<Option.Option<TaskSchema>>;
+  getTasks: Effect.Effect<ReadonlyArray<TaskSchema>>;
+  createTask: (params: CreateTaskParams , user_id : number) => Effect.Effect<number>;
+  updateTask: (id: number, params: UpdateTaskParams) => Effect.Effect<TaskSchema, Cause.NoSuchElementException>;
+  deleteTask: (id: number) => Effect.Effect<boolean>;
+}
+
+export const CreateTaskParams =  TaskSchema.pipe(Schema.omit("task_id"));
+ type CreateTaskParams = Schema.Schema.Type< typeof CreateTaskParams> ;
+
+const UpdateTaskParams =   TaskSchema.pipe(Schema.omit("task_id"));
 type UpdateTaskParams = Schema.Schema.Type<typeof UpdateTaskParams> & {user_id : number} ;
 
 export const makeTaskRepository = Effect.gen(function* (_) {

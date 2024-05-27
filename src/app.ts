@@ -37,6 +37,11 @@ const ServerLive = Layer.scopedDiscard(
   })
 );
 
+
+/**
+ * Routes 
+ */
+
 /**
  * Create a new user
  */
@@ -159,7 +164,9 @@ const UpdateUserTaskRouteLive = Layer.scopedDiscard(
                           .status(404)
                           .json(`Task ${taskId} not found for user ${userId}`)
                       ),
-                    onSuccess: (task) => Effect.sync(() => res.json({ task })),
+                    onSuccess: (task) => Effect.sync(() => res.status(200).json({ 
+                      message:  "Task Updated",
+                      updateTask : task })),
                   })
                 ),
             })
@@ -183,13 +190,19 @@ const DeleteUserTaskRouteLive = Layer.scopedDiscard(
       const userId = req.params.user_id;
       const taskId = req.params.task_id as unknown as number;
       const program = TaskRepository.pipe(
-        Effect.flatMap((repo) => repo.deleteTask(userId, Number(taskId))),
-        Effect.flatMap((deleted) => Effect.sync(() => res.json({ deleted })))
+        Effect.flatMap((repo) => repo.deleteTask(userId, taskId)),
+        Effect.matchEffect({
+          onFailure: (error) => Effect.sync(() => res.status(400).json({ error })),
+          onSuccess: (message) => Effect.sync(() => res.json({ message })),
+        })
       );
       runFork(program);
     });
   })
 );
+/**
+ * Task Repository
+ */
 
 class TaskSchema extends Schema.Class<TaskSchema>("TaskSchema")({
   task_id: Schema.Number,

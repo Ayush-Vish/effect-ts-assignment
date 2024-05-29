@@ -29,8 +29,13 @@ describe("API Endpoints", () => {
     expect(res.statusCode).toEqual(200);
     expect(res.body).toHaveProperty('message', 'Task Created');
     expect(res.body).toHaveProperty('data');
-    expect(res.body.data).toHaveProperty('task_id');
-    taskId = res.body.data.task_id; 
+    expect(res.body.data).toHaveProperty('task');
+    expect(res.body.data.task).toHaveProperty('task_id');
+    expect(res.body.data.task).toHaveProperty('name', taskData.name);
+    expect(res.body.data.task).toHaveProperty('status', taskData.status);
+    expect(res.body.data.task).toHaveProperty('description', taskData.description);
+
+    taskId = res.body.data.task.task_id; 
   });
 
   // Test for GET /users/:user_id/tasks

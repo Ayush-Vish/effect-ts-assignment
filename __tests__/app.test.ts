@@ -52,7 +52,7 @@ describe("API Endpoints", () => {
     expect(res.body).toHaveProperty('message', 'Task Found');
     expect(res.body).toHaveProperty('data');
     expect(res.body.data).toHaveProperty('task_id', Number(taskId));
-    expect(res.body.data).toHaveProperty('user_id', userId);
+
   });
 
   // Test for PUT /users/:user_id/tasks/:task_id
@@ -69,7 +69,7 @@ describe("API Endpoints", () => {
     expect(res.body).toHaveProperty('message', 'Task Updated');
     expect(res.body).toHaveProperty('data');
     expect(res.body.data).toHaveProperty('task_id', Number(taskId));
-    expect(res.body.data).toHaveProperty('user_id', userId);
+
     expect(res.body.data).toHaveProperty('name', updatedTaskData.name);
     expect(res.body.data).toHaveProperty('status', updatedTaskData.status);
     expect(res.body.data).toHaveProperty('description', updatedTaskData.description);

@@ -15,7 +15,6 @@ export const UpdateTaskParams = Schema.partial(
 );
 export type UpdateTaskParams = Schema.Schema.Type<typeof UpdateTaskParams>;
 
-
 export interface User {
   user_id: string;
   tasks: TaskSchema[];

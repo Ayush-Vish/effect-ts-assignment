@@ -1,8 +1,8 @@
-import { Layer, Effect,  FiberSet, Option } from "effect";
+import { Layer, Effect, FiberSet, Option } from "effect";
 import { TaskRepository } from "../repositories/task.repo";
 import { ApiResponse } from "../utils/util";
 import { CreateTaskParams, UpdateTaskParams } from "../models/model";
-import { Express } from "../app"
+import { Express } from "../app";
 import { Schema } from "@effect/schema";
 export const GetUserTaskRouteLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
@@ -19,8 +19,13 @@ export const GetUserTaskRouteLive = Layer.scopedDiscard(
         Effect.flatMap(
           Option.match({
             onNone: () =>
-              Effect.sync(() =>
-                new ApiResponse(res, 404, `Task ${taskId} not found for user ${userId}`)
+              Effect.sync(
+                () =>
+                  new ApiResponse(
+                    res,
+                    404,
+                    `Task ${taskId} not found for user ${userId}`
+                  )
               ),
             onSome: (task) =>
               Effect.sync(() => new ApiResponse(res, 200, "Task Found", task)),
@@ -42,12 +47,12 @@ export const GetUserTasksRouteLive = Layer.scopedDiscard(
         Effect.flatMap((repo) => repo.getTasksByUser(userId)),
         Effect.matchEffect({
           onFailure: (error) =>
-            Effect.sync(() =>
-              new ApiResponse(res, error.statusCode || 500, error.message)
+            Effect.sync(
+              () => new ApiResponse(res, error.statusCode || 500, error.message)
             ),
           onSuccess: (tasks) =>
-            Effect.sync(() =>
-              new ApiResponse(res, 200, "Tasks Retrieved", tasks)
+            Effect.sync(
+              () => new ApiResponse(res, 200, "Tasks Retrieved", tasks)
             ),
         })
       );
@@ -70,11 +75,16 @@ export const CreateUserTaskRouteLive = Layer.scopedDiscard(
               onFailure: () =>
                 Effect.sync(() => new ApiResponse(res, 400, "Invalid Task")),
               onSuccess: (task) =>
-                repo.createTask(userId, task).pipe(
-                  Effect.flatMap((task) =>
-                    Effect.sync(() => new ApiResponse(res, 200, "Task Created", { task }))
-                  )
-                ),
+                repo
+                  .createTask(userId, task)
+                  .pipe(
+                    Effect.flatMap((task) =>
+                      Effect.sync(
+                        () =>
+                          new ApiResponse(res, 200, "Task Created", { task })
+                      )
+                    )
+                  ),
             })
           )
         )
@@ -105,9 +115,15 @@ export const UpdateUserTaskRouteLive = Layer.scopedDiscard(
                 repo.updateTask(userId, taskId, task).pipe(
                   Effect.matchEffect({
                     onFailure: (error) =>
-                      Effect.sync(() => new ApiResponse(res, error.statusCode, error.message)),
+                      Effect.sync(
+                        () =>
+                          new ApiResponse(res, error.statusCode, error.message)
+                      ),
                     onSuccess: (updatedTask) =>
-                      Effect.sync(() => new ApiResponse(res, 200, "Task Updated", updatedTask)),
+                      Effect.sync(
+                        () =>
+                          new ApiResponse(res, 200, "Task Updated", updatedTask)
+                      ),
                   })
                 ),
             })

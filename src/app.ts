@@ -1,21 +1,16 @@
-import * as Schema from "@effect/schema/Schema";
-import bodyParser from "body-parser";
-import {
-  Context,
-  Effect,
-  FiberSet,
-  HashMap,
-  Layer,
-  Option,
-  Array,
-  Ref,
-  Runtime,
-} from "effect";
+import express, { Response } from "express";
+import { Context, Effect, Layer, Runtime } from "effect";
 
-import express ,  {Response}  from "express";
-import { v4 as uuidv4 } from "uuid";
+import bodyParser from "body-parser";
+
 import { CreateUserRouteLive } from "./routes/userRoutes";
-import { CreateUserTaskRouteLive, DeleteUserTaskRouteLive, GetUserTaskRouteLive, GetUserTasksRouteLive, UpdateUserTaskRouteLive } from "./routes/taskRoutes";
+import {
+  CreateUserTaskRouteLive,
+  DeleteUserTaskRouteLive,
+  GetUserTaskRouteLive,
+  GetUserTasksRouteLive,
+  UpdateUserTaskRouteLive,
+} from "./routes/taskRoutes";
 import { TaskRepository } from "./repositories/task.repo";
 
 export class Express extends Context.Tag("Express")<
@@ -25,12 +20,12 @@ export class Express extends Context.Tag("Express")<
   static readonly Live = Layer.sync(Express, () => {
     const app = express();
     app.use(bodyParser.json());
-    
+
     return app;
   });
 }
 
- const ServerLive = Layer.scopedDiscard(
+const ServerLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
     const port = 3000;
     const app = yield* _(Express);

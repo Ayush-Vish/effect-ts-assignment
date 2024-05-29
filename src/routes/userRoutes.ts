@@ -11,7 +11,12 @@ export const CreateUserRouteLive = Layer.scopedDiscard(
       const program = TaskRepository.pipe(
         Effect.flatMap((repo) => repo.createUser()),
         Effect.flatMap((user) =>
-          Effect.sync(() => new ApiResponse(res, 200, "User Created", { user_id: user.user_id }))
+          Effect.sync(
+            () =>
+              new ApiResponse(res, 200, "User Created", {
+                user_id: user.user_id,
+              })
+          )
         ),
         Effect.catchAll((error) =>
           Effect.sync(() => new ApiResponse(res, 500, "Internal Server Error"))

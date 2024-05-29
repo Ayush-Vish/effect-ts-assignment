@@ -1,7 +1,11 @@
 import { Context, Effect, HashMap, Layer, Option, Ref } from "effect";
 import { v4 as uuidv4 } from "uuid";
 import { HTTPError } from "../utils/util";
-import { TaskSchema, CreateTaskParams, UpdateTaskParams } from "../models/model";
+import {
+  TaskSchema,
+  CreateTaskParams,
+  UpdateTaskParams,
+} from "../models/model";
 import { User } from "../models/model";
 
 const makeTaskRepository = Effect.gen(function* (_) {
@@ -63,12 +67,10 @@ const makeTaskRepository = Effect.gen(function* (_) {
           }
           const updatedUser = {
             ...innerUser.value,
-            tasks: [...innerUser.value.tasks, newTask]
+            tasks: [...innerUser.value.tasks, newTask],
           };
           return HashMap.set(innerMap, userId, updatedUser);
-        }).pipe(
-          Effect.flatMap(() => Effect.sync(() => newTask))
-        );
+        }).pipe(Effect.flatMap(() => Effect.sync(() => newTask)));
       }),
       Effect.catchAll((error) => Effect.fail(error))
     );
@@ -84,7 +86,9 @@ const makeTaskRepository = Effect.gen(function* (_) {
       if (Option.isNone(user)) {
         return map;
       }
-      const taskIndex = user.value.tasks.findIndex((task) => task.task_id === taskId);
+      const taskIndex = user.value.tasks.findIndex(
+        (task) => task.task_id === taskId
+      );
       if (taskIndex === -1) {
         return map;
       }
@@ -94,7 +98,7 @@ const makeTaskRepository = Effect.gen(function* (_) {
       updatedTasks[taskIndex] = updatedTask;
       const updatedUser = {
         ...user.value,
-        tasks: updatedTasks
+        tasks: updatedTasks,
       };
       return HashMap.set(map, userId, updatedUser);
     }).pipe(
@@ -120,27 +124,25 @@ const makeTaskRepository = Effect.gen(function* (_) {
       if (Option.isNone(user)) {
         throw new HTTPError("Task not found", 404);
       }
-      const updatedTasks = user.value.tasks.filter((task) => task.task_id !== taskId);
+      const updatedTasks = user.value.tasks.filter(
+        (task) => task.task_id !== taskId
+      );
       if (updatedTasks.length === user.value.tasks.length) {
         throw new HTTPError("Task not found", 404);
       }
       const updatedUser = {
         ...user.value,
-        tasks: updatedTasks
+        tasks: updatedTasks,
       };
       return HashMap.set(map, userId, updatedUser);
-    }).pipe(
-      Effect.flatMap(() => Effect.sync(() => `Task ${taskId} deleted`))
-    );
+    }).pipe(Effect.flatMap(() => Effect.sync(() => `Task ${taskId} deleted`)));
 
   const createUser = (): Effect.Effect<User> => {
     const userId = uuidv4();
     const newUser = { user_id: userId, tasks: [] };
     return Ref.updateAndGet(tasksRef, (map) =>
       HashMap.set(map, userId, newUser)
-    ).pipe(
-      Effect.flatMap(() => Effect.sync(() => newUser))
-    );
+    ).pipe(Effect.flatMap(() => Effect.sync(() => newUser)));
   };
 
   return {

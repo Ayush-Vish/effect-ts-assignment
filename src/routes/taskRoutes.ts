@@ -60,7 +60,6 @@ export const GetUserTasksRouteLive = Layer.scopedDiscard(
     });
   })
 );
-
 export const CreateUserTaskRouteLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
     const app = yield* _(Express);
@@ -72,19 +71,19 @@ export const CreateUserTaskRouteLive = Layer.scopedDiscard(
         Effect.flatMap((repo) =>
           decodeBody(req.body).pipe(
             Effect.matchEffect({
-              onFailure: () =>
-                Effect.sync(() => new ApiResponse(res, 400, "Invalid Task")),
-              onSuccess: (task) =>
-                repo
-                  .createTask(userId, task)
-                  .pipe(
-                    Effect.flatMap((task) =>
-                      Effect.sync(
-                        () =>
-                          new ApiResponse(res, 200, "Task Created", { task })
-                      )
-                    )
-                  ),
+              onFailure: () => {
+                return Effect.sync(() => new ApiResponse(res, 400, "Invalid Task"));
+              },
+              onSuccess: (task) => repo.createTask(userId, task).pipe(
+                Effect.matchEffect({
+                  onFailure: (error) => {
+                    return Effect.sync(() => new ApiResponse(res, error.statusCode || 500, error.message));
+                  },
+                  onSuccess: (task) => {
+                    return Effect.sync(() => new ApiResponse(res, 200, "Task Created", task));
+                  },
+                })
+              ),
             })
           )
         )
@@ -93,6 +92,7 @@ export const CreateUserTaskRouteLive = Layer.scopedDiscard(
     });
   })
 );
+
 
 export const UpdateUserTaskRouteLive = Layer.scopedDiscard(
   Effect.gen(function* (_) {
